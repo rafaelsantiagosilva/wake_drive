@@ -1,0 +1,79 @@
+Metadata-Version: 2.1
+Name: wake_drive
+Version: 0.1
+Summary: O objetivo do projeto WakeDrive é acordar motoristas sonolentos, com o intuito de evitar acidentes de trânsito.
+Home-page: https://github.com/rafaelsantiagosilva/wake_drive
+Author: Heloísa Fernandes Cano, Matheus Eduardo da Silva, Rafael Santiago da Silva
+Author-email: heloisafcano@gmail.com, matheuseduardosilva13@gmail.com, rafael.santiago.silva.1405@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
+Requires-Dist: absl-py==2.1.0
+Requires-Dist: attrs==23.2.0
+Requires-Dist: cffi==1.16.0
+Requires-Dist: contourpy==1.2.1
+Requires-Dist: cycler==0.12.1
+Requires-Dist: flatbuffers==24.3.25
+Requires-Dist: fonttools==4.52.4
+Requires-Dist: jax==0.4.28
+Requires-Dist: jaxlib==0.4.28
+Requires-Dist: kiwisolver==1.4.5
+Requires-Dist: matplotlib==3.9.0
+Requires-Dist: mediapipe==0.10.14
+Requires-Dist: ml-dtypes==0.4.0
+Requires-Dist: numpy==1.26.4
+Requires-Dist: opencv-contrib-python==4.9.0.80
+Requires-Dist: opencv-python==4.9.0.80
+Requires-Dist: opt-einsum==3.3.0
+Requires-Dist: packaging==24.0
+Requires-Dist: pillow==10.3.0
+Requires-Dist: protobuf==4.25.3
+Requires-Dist: pycparser==2.22
+Requires-Dist: pyparsing==3.1.2
+Requires-Dist: pyserial==3.5
+Requires-Dist: python-dateutil==2.9.0.post0
+Requires-Dist: scipy==1.13.1
+Requires-Dist: setuptools==70.0.0
+Requires-Dist: six==1.16.0
+Requires-Dist: sounddevice==0.4.7
+
+# WakeDrive
+
+O objetivo do projeto WakeDrive Ã© acordar motoristas sonolentos, com o intuito de evitar acidentes de trÃ¢nsito.
+
+## InstruÃ§Ãµes
+
+### Instalar o pacote via pip
+
+### Ativar o ambiente de desenvolvimento
+
+#### Windows
+
+- #### `venv\Scripts\activate`
+
+#### Linux/macOS
+
+- #### `source venv/Scripts/activate`
+
+### Instalar as dependÃªncias
+
+- #### `pip install -r requirements.txt`
+
+### Atualizar requirements.txt
+
+- Ao adicionar ou remover alguma biblioteca ao projeto:
+
+- #### `pip freeze > requirements.txt`
+
+### Formatar o cÃ³digo
+
+- #### `black NOME_DO_ARQUIVO`
+
+## Tecnologias usadas
+
+- Python [![Python](https://img.shields.io/badge/Python-3.x-blue.svg)](https://www.python.org/downloads/)
+- OpenCV [![OpenCV](https://pepy.tech/badge/opencv-python)](https://pepy.tech/project/opencv-python)
+- MediaPipe [![MediaPipe](https://static.pepy.tech/badge/mediapipe)](https://pepy.tech/project/mediapipe)
+- PySerial [![PySerial](https://static.pepy.tech/badge/pyserial)](https://pepy.tech/project/pyserial)
+- Black [![Black](https://static.pepy.tech/badge/black)](https://pepy.tech/project/black)
+- Arduino [![Arduino](https://img.shields.io/badge/Arduino-IDE-orange.svg)](https://www.arduino.cc/en/Main/Software)
