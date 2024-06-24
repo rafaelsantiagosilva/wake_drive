@@ -5,7 +5,6 @@ import numpy as np
 from serial import Serial
 import time
 
-
 def map_value(x, in_min, in_max, out_min, out_max):
     """
     Mapeia um valor de um intervalo para outro.
