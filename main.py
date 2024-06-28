@@ -4,6 +4,7 @@ import math
 import numpy as np
 from serial import Serial
 import time
+import winsound
 
 def map_value(x, in_min, in_max, out_min, out_max):
     """
@@ -254,6 +255,7 @@ def main():
                     blinkCount += 1
                     blinking = False
                     closed_eye_start_time = None
+                    winsound.Beep(1000, 500)
                     # arduino.write(b"1")    
                 
                 cv2.putText(
