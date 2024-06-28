@@ -298,15 +298,15 @@ def main():
                     cv2.LINE_AA,
                 )
 
+            thread_turn_servo_horizontal.join()
+            thread_turn_servo_horizontal.join()
+            print("Threads are finished!")
             cv2.imshow("Wake Drive", image)
 
             if cv2.waitKey(5) & 0xFF == ord("q"):
                 break
 
     cap.release()
-    thread_turn_servo_horizontal.join()
-    thread_turn_servo_horizontal.join()
-    print("Threads are finished!")
 
 
 if __name__ == "__main__":
