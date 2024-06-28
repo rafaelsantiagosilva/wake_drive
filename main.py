@@ -5,6 +5,11 @@ import numpy as np
 from serial import Serial
 import time
 import winsound
+import threading
+
+blinkCount = 0
+blinking = False
+closed_eye_start_time = None
 
 def map_value(x, in_min, in_max, out_min, out_max):
     """
@@ -92,19 +97,32 @@ def draw_face_coordinates(image, face_landmarks, width):
     y_coord = int(face_landmarks[0].y * width)
     cv2.putText(image, f'X: {x_coord}, Y: {y_coord}', (50, 100), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-# def turn_servo_horizontal(arduino, face_landmarks, initial_x):
-#     """
-#     Gira o servo motor horizontalmente com base na posição do rosto.
-#     """
-#     x_coord = face_landmarks[0].x
-
-#     if x_coord < initial_x:
-#         # Mover servo para a esquerda
-#         arduino.write(b"L")
-#     elif x_coord > initial_x:
-#         # Mover servo para a direita
-#         arduino.write(b"R")
-
+def turn_servo_horizontal(arduino, x, y, mid_x, mid_y):
+    """
+    Gira o servo motor horizontalmente com base na posição do rosto.
+    """
+    if x > mid_x:
+        arduino.write(b'L')
+    elif x < mid_x:
+        arduino.write(b'R')
+        
+def beep_if_blinking(arduino, eye_closed_duration):
+    """
+        Verifica se o usuário está de olho fechado. Se sim solta um beep
+    """
+    global blinkCount, blinking, closed_eye_start_time
+    
+    if (
+        blinking
+        and closed_eye_start_time is not None
+        and (time.time() - closed_eye_start_time) >= eye_closed_duration
+    ):
+        blinkCount += 1
+        blinking = False
+        closed_eye_start_time = None
+        winsound.Beep(1000, 500)
+        arduino.write(b"1")
+        
 def _normalized_to_pixel_coordinates(
     normalized_x, normalized_y, image_width, image_height
 ):
@@ -124,6 +142,8 @@ face_mesh = mpface_mesh.FaceMesh(
     min_detection_confidence=0.5)
 
 def main():
+    global blinkCount, blinking, closed_eye_start_time
+    
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     cap.set(cv2.CAP_PROP_FPS, 25.0)
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -141,17 +161,13 @@ def main():
     openedEyes = 500
     closedEyes = 0
     blinkMap = 0
-    blinking = False
-    blinkCount = 0
     calibrating = True
 
-    # arduino = Serial("COM11", 9600)
+    arduino = Serial("COM11", 9600)
 
-    closed_eye_start_time = None
     eye_closed_duration = 0.8
-    
+        
     font = cv2.FONT_HERSHEY_DUPLEX
-
 
     while True:
         image, face_landmarks = detect_face_landmarks(cap, width, height)
@@ -206,28 +222,22 @@ def main():
                         y_min = h
                         for lm in faceLMs.landmark:
                             x, y = int(lm.x * w), int(lm.y * h)
+                            
                             if x > x_max:
                                 x_max = x
                             if x < x_min:
                                 x_min = x
+                                
                             if y > y_max:
                                 y_max = y
                             if y < y_min:
                                 y_min = y
                                 
-                            # if x > mid_x:
-                            #     arduino.write(b'L')
-                            # elif x < mid_x:
-                            #     arduino.write(b'R')
-                            
-                            # if y > mid_y:
-                            #     arduino.write(b'U')
-                            # elif y < mid_y:
-                            #     arduino.write(b'D')
+                            thread_turn_servo_horizontal = threading.Thread(target=turn_servo_horizontal, args=(arduino, x, y, mid_x, mid_y))
+                            thread_turn_servo_horizontal.start()
                                 
                             # print(arduino.read())
                                 
-                            
                         cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
                         print("x = ", x)
                         print("y = ", y)
@@ -247,16 +257,8 @@ def main():
                     blinking = False
                     closed_eye_start_time = None
 
-                if (
-                    blinking
-                    and closed_eye_start_time is not None
-                    and (time.time() - closed_eye_start_time) >= eye_closed_duration
-                ):
-                    blinkCount += 1
-                    blinking = False
-                    closed_eye_start_time = None
-                    winsound.Beep(1000, 500)
-                    # arduino.write(b"1")    
+                thread_beep_if_blinking = threading.Thread(target=beep_if_blinking, args=(arduino, eye_closed_duration))
+                thread_beep_if_blinking.start()
                 
                 cv2.putText(
                     image,
@@ -273,7 +275,11 @@ def main():
 
             if cv2.waitKey(5) & 0xFF == ord("q"):
                 break
+            
     cap.release()
+    thread_turn_servo_horizontal.join()
+    thread_turn_servo_horizontal.join()
+    print("Threads are finished!")
 
 if __name__ == "__main__":
     main()
