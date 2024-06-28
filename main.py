@@ -10,7 +10,8 @@ import threading
 blinkCount = 0
 blinking = False
 closed_eye_start_time = None
-
+threads = []
+thread_lock = threading.Lock()
 
 def map_value(x, in_min, in_max, out_min, out_max):
     """
@@ -183,7 +184,7 @@ def main():
     blinkMap = 0
     calibrating = True
 
-    arduino = Serial("COM11", 9600)
+    arduino = Serial("COM8", 9600)
 
     eye_closed_duration = 0.8
 
@@ -257,6 +258,7 @@ def main():
                                 target=turn_servo_horizontal,
                                 args=(arduino, x, y, mid_x, mid_y),
                             )
+                            threads.append(thread_turn_servo_horizontal)
                             thread_turn_servo_horizontal.start()
 
                             # print(arduino.read())
@@ -285,6 +287,7 @@ def main():
                 thread_beep_if_blinking = threading.Thread(
                     target=beep_if_blinking, args=(arduino, eye_closed_duration)
                 )
+                threads.append(thread_beep_if_blinking)
                 thread_beep_if_blinking.start()
 
                 cv2.putText(
@@ -298,8 +301,9 @@ def main():
                     cv2.LINE_AA,
                 )
 
-            thread_turn_servo_horizontal.join()
-            thread_turn_servo_horizontal.join()
+            for thread in threads:
+                thread.join()
+                
             print("Threads are finished!")
             cv2.imshow("Wake Drive", image)
 
