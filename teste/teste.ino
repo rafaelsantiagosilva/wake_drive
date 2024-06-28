@@ -20,7 +20,7 @@ void setup() {
 
 void onLed(int pin) {
   digitalWrite(pin, HIGH);
-  delay(1500);
+  delay(50);
   digitalWrite(pin, LOW);
 }
 
@@ -30,23 +30,20 @@ void loop() {
   input = Serial.read(); //reads the data into a variable
 
   if (input == '1') {
-    tone(buzzer, 2000);
+    tone(buzzer, 5);
     delay(500);
     noTone(buzzer);
   }
-
-  if(input == 'U'){
-   onLed(upLed);    //adjusts the servo angle according to the input
-   y += 1;               //updates the value of the angle
-  }
-  else if(input == 'D'){ 
-   onLed(downLed);
-   y -= 1;
-  }
-  else{
-   Serial.println(y);
-  } 
-  if(input == 'L'){
+  // } else if(input == 'U'){
+  //  onLed(upLed);    //adjusts the servo angle according to the input
+  //  y += 1;               //updates the value of the angle
+  // }
+  // else if(input == 'D'){ 
+  //  onLed(downLed);
+  //  y -= 1;
+  // }
+  
+  else if(input == 'L'){
    onLed(leftLed);
   x -= 1;
   } else if(input == 'R'){

@@ -254,12 +254,12 @@ def main():
                             if y < y_min:
                                 y_min = y
 
-                            thread_turn_servo_horizontal = threading.Thread(
-                                target=turn_servo_horizontal,
-                                args=(arduino, x, y, mid_x, mid_y),
-                            )
-                            threads.append(thread_turn_servo_horizontal)
-                            thread_turn_servo_horizontal.start()
+                            # thread_turn_servo_horizontal = threading.Thread(
+                            #     target=turn_servo_horizontal,
+                            #     args=(arduino, x, y, mid_x, mid_y),
+                            # )
+                            # threads.append(thread_turn_servo_horizontal)
+                            # thread_turn_servo_horizontal.start()
 
                             # print(arduino.read())
 
