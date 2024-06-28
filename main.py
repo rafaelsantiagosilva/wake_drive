@@ -5,10 +5,6 @@ import numpy as np
 from serial import Serial
 import time
 
-# Inicializa MediaPipe Face Detection e Drawing utils
-mp_face_detection = mp.solutions.face_detection
-mp_drawing = mp.solutions.drawing_utils
-
 def map_value(x, in_min, in_max, out_min, out_max):
     """
     Mapeia um valor de um intervalo para outro.
@@ -119,61 +115,12 @@ def _normalized_to_pixel_coordinates(
     pixel_y = min(int(normalized_y * image_height), image_height - 1)
     return pixel_x, pixel_y
 
-def process_static_images(image_files, output_dir='/tmp'):
-    with mp_face_detection.FaceDetection(
-        model_selection=1, min_detection_confidence=0.5) as face_detection:
-        for idx, file in enumerate(image_files):
-            image = cv2.imread(file)
-            # Converte a imagem de BGR para RGB e processa com MediaPipe Face Detection
-            results = face_detection.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-
-            # Desenha as detecções de cada rosto
-            if not results.detections:
-                continue
-            annotated_image = image.copy()
-            for detection in results.detections:
-                print('Nose tip:')
-                print(mp_face_detection.get_key_point(
-                    detection, mp_face_detection.FaceKeyPoint.NOSE_TIP))
-                mp_drawing.draw_detection(annotated_image, detection)
-            cv2.imwrite(f'{output_dir}/annotated_image{idx}.png', annotated_image)
-
-def process_webcam_input():
-    cap = cv2.VideoCapture(0)
-    with mp_face_detection.FaceDetection(
-        model_selection=0, min_detection_confidence=0.5) as face_detection:
-        while cap.isOpened():
-            success, image = cap.read()
-            if not success:
-                print("Ignoring empty camera frame.")
-                # Se estiver carregando um vídeo, use 'break' em vez de 'continue'.
-                continue
-
-            # Para melhorar o desempenho, opcionalmente marque a imagem como não gravável para
-            # passar por referência.
-            image.flags.writeable = False
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            results = face_detection.process(image)
-
-            # Desenha as anotações de detecção de rosto na imagem.
-            image.flags.writeable = True
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            if results.detections:
-                for detection in results.detections:
-                    mp_drawing.draw_detection(image, detection)
-            # Inverte a imagem horizontalmente para uma exibição tipo selfie.
-            cv2.imshow('MediaPipe Face Detection', cv2.flip(image, 1))
-            if cv2.waitKey(5) & 0xFF == 27:
-                break
-    cap.release()
-
-mphands = mp.solutions.face_mesh
-hands = mphands.FaceMesh(
+mpface_mesh = mp.solutions.face_mesh
+face_mesh = mpface_mesh.FaceMesh(
     static_image_mode=True,
     max_num_faces=1,
     refine_landmarks=True,
     min_detection_confidence=0.5)
-mp_drawing = mp.solutions.drawing_utils
 
 def main():
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -193,14 +140,17 @@ def main():
     openedEyes = 500
     closedEyes = 0
     blinkMap = 0
-    piscando = False
+    blinking = False
     blinkCount = 0
     calibrating = True
 
-    arduino = Serial("COM11", 9600)
+    # arduino = Serial("COM11", 9600)
 
     closed_eye_start_time = None
     eye_closed_duration = 0.8
+    
+    font = cv2.FONT_HERSHEY_DUPLEX
+
 
     while True:
         image, face_landmarks = detect_face_landmarks(cap, width, height)
@@ -218,30 +168,42 @@ def main():
             draw_face_coordinates(image, face_landmarks, width)
 
             if calibrating:
-                if ratioMapped < openedEyes and piscando == False:
+                if ratioMapped < openedEyes and not blinking:
                     blinkCount += 1
                     openedEyes = ratioMapped
-                    piscando = True
+                    blinking = True
 
-                if ratioMapped >= closedEyes and piscando == True:
+                if ratioMapped >= closedEyes and blinking:
                     closedEyes = ratioMapped
-                    piscando = False
+                    blinking = False
 
                 if blinkCount >= 5:
                     blinkMap = closedEyes + (openedEyes - closedEyes) / 2
                     calibrating = False
                     blinkCount = 0
+                    
+                cv2.putText(
+                    image,
+                    "Pisque para calibrar o dispositivo",
+                    (50, 50),
+                    font,
+                    1,
+                    (0, 0, 0),
+                    2,
+                    cv2.LINE_AA,
+                )
+                
             else:    
                 framergb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                result = hands.process(framergb)
-                hand_landmarks = result.multi_face_landmarks
-                if hand_landmarks:
-                    for handLMs in hand_landmarks:
+                result = face_mesh.process(framergb)
+                face_landmarks = result.multi_face_landmarks
+                if face_landmarks:
+                    for faceLMs in face_landmarks:
                         x_max = 0
                         y_max = 0
                         x_min = w
                         y_min = h
-                        for lm in handLMs.landmark:
+                        for lm in faceLMs.landmark:
                             x, y = int(lm.x * w), int(lm.y * h)
                             if x > x_max:
                                 x_max = x
@@ -252,15 +214,15 @@ def main():
                             if y < y_min:
                                 y_min = y
                                 
-                            if x > mid_x:
-                                arduino.write(b'L')
-                            elif x < mid_x:
-                                arduino.write(b'R')
+                            # if x > mid_x:
+                            #     arduino.write(b'L')
+                            # elif x < mid_x:
+                            #     arduino.write(b'R')
                             
-                            if y > mid_y:
-                                arduino.write(b'U')
-                            elif y < mid_y:
-                                arduino.write(b'D')
+                            # if y > mid_y:
+                            #     arduino.write(b'U')
+                            # elif y < mid_y:
+                            #     arduino.write(b'D')
                                 
                             # print(arduino.read())
                                 
@@ -270,47 +232,30 @@ def main():
                         print("y = ", y)
                         print("mid x = ", cap.get(cv2.CAP_PROP_FRAME_WIDTH) / 2)
                         print("mid y = ", cap.get(cv2.CAP_PROP_FRAME_HEIGHT) / 2)
-                if not calibrated:
-                    initial_eye_position[0] = face_landmarks[0].x
-                    initial_eye_position[1] = face_landmarks[0].y
-                    calibrated = True
+                        
+                # if not calibrated:
+                #     initial_eye_position[0] = face_landmarks[0].x
+                #     initial_eye_position[1] = face_landmarks[0].y
+                #     calibrated = True
                     
-                if ratioMapped < blinkMap and piscando == False:
-                    piscando = True
+                if ratioMapped < blinkMap and not blinking:
+                    blinking = True
                     closed_eye_start_time = time.time()
 
-                if ratioMapped >= blinkMap + 1 and piscando == True:
-                    piscando = False
+                if ratioMapped >= blinkMap + 1 and blinking:
+                    blinking = False
                     closed_eye_start_time = None
 
                 if (
-                    piscando
+                    blinking
                     and closed_eye_start_time is not None
                     and (time.time() - closed_eye_start_time) >= eye_closed_duration
                 ):
                     blinkCount += 1
-                    piscando = False
+                    blinking = False
                     closed_eye_start_time = None
-                    arduino.write(b"1")    
-                    
-                # while initial_eye_position[0] != face_landmarks[0].x:
-                #     turn_servo_horizontal(arduino, face_landmarks, initial_eye_position[0]) 
+                    # arduino.write(b"1")    
                 
-                
-            font = cv2.FONT_HERSHEY_SIMPLEX
-
-            if calibrating:
-                cv2.putText(
-                    image,
-                    "Pisque para calibrar o dispositivo",
-                    (50, 50),
-                    font,
-                    1,
-                    (0, 255, 0),
-                    2,
-                    cv2.LINE_AA,
-                )
-            else:
                 cv2.putText(
                     image,
                     f"{blinkCount}",
@@ -322,17 +267,11 @@ def main():
                     cv2.LINE_AA,
                 )
 
-            cv2.imshow("MediaPipe Face Mesh", image)
+            cv2.imshow("Wake Drive", image)
 
             if cv2.waitKey(5) & 0xFF == ord("q"):
                 break
-
     cap.release()
-
 
 if __name__ == "__main__":
     main()
-    # Lista de arquivos de imagem para processar
-    IMAGE_FILES = []
-    process_static_images(IMAGE_FILES)
-    process_webcam_input()
