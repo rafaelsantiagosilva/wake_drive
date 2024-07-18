@@ -323,10 +323,16 @@ try:
                     2,
                     cv2.LINE_AA
                 )
-            else:
+            else:                
                 framergb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 result = face_mesh.process(framergb)
                 face_landmarks = result.multi_face_landmarks
+                
+                if not calibrated:
+                    initial_eye_position[0] = face_landmarks[0].x
+                    initial_eye_position[1] = face_landmarks[1].y
+                    calibrated = True
+            
                 if face_landmarks:
                     for faceLMs in face_landmarks:
                         x_max = 0
