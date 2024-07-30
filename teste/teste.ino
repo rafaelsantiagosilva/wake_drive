@@ -34,14 +34,14 @@ void loop() {
     delay(500);
     noTone(buzzer);
   }
-  // } else if(input == 'U'){
-  //  onLed(upLed);    //adjusts the servo angle according to the input
-  //  y += 1;               //updates the value of the angle
-  // }
-  // else if(input == 'D'){ 
-  //  onLed(downLed);
-  //  y -= 1;
-  // }
+  } else if(input == 'U'){
+   onLed(upLed);    //adjusts the servo angle according to the input
+   y += 1;               //updates the value of the angle
+  }
+  else if(input == 'D'){ 
+   onLed(downLed);
+   y -= 1;
+  }
   
   else if(input == 'L'){
    onLed(leftLed);

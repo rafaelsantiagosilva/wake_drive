@@ -8,7 +8,7 @@ import winsound
 import threading
 import queue
 
-COM = "COM3"
+COM = "COM9"
 arduino_lock = threading.Lock()
 serial_command = ""
 arduino_queue = queue.Queue()
@@ -25,6 +25,7 @@ h, w, c = image.shape
 
 ratios = []
 initial_eye_position = [0, 0]
+actual_eye_position = [0, 0]
 calibrated = False
 
 openedEyes = 500
@@ -191,46 +192,13 @@ def turn_servo_horizontal(arduino_servo):
             elif x < mid_x:
                 serial_command += "R"
                 print("R")
-
-# def beep_if_blinking():
-#     """
-#     Verifica se o usuário está de olho fechado. Se sim solta um beep
-#     """
-#     arduino_blink = Serial(COM, 9600)
-#     global blinkCount, blinking, closed_eye_start_time
-    
-#     while True:
-#         if ratioMapped < blinkMap and not blinking:
-#             blinking = True
-#             closed_eye_start_time = time.time()
-
-#         if ratioMapped >= blinkMap + 1 and blinking:
-#             blinking = False
-#             closed_eye_start_time = None
-
-#         if (
-#             blinking
-#             and closed_eye_start_time is not None
-#             and (time.time() - closed_eye_start_time) >= eye_closed_duration
-#         ):
-#             blinkCount += 1
-#             blinking = False
-#             closed_eye_start_time = None
-#             winsound.Beep(1000, 500)
-#             arduino_blink.write(b"1")
-#             print("1")
             
-#         cv2.putText(
-#             image,
-#             f"{blinkCount}",
-#             (50, 50),
-#             font,
-#             1,
-#             (0, 0, 255),
-#             2,
-#             cv2.LINE_AA,
-#         )
-
+            if y > mid_y:
+                serial_command += "D"
+                print("D")
+            elif y < mid_y:
+                serial_command += "U"
+                print("U")
 
 def _normalized_to_pixel_coordinates(
     normalized_x, normalized_y, image_width, image_height
@@ -323,15 +291,31 @@ try:
                     2,
                     cv2.LINE_AA
                 )
-            else:                
+            else:              
+                eye_status = ""
+                if ratioMapped < blinkMap:
+                    eye_status = "Olhos fechados"
+                elif ratioMapped >= blinkMap + 1:
+                    eye_status = "Olhos abertos"
+                else:
+                    eye_status = "Piscando..."
+                    
+                cv2.putText(
+                    image,
+                    eye_status,
+                    (50, 200),
+                    font,
+                    1,
+                    (0, 145, 180),
+                    2,
+                    cv2.LINE_AA,
+                )
+
+
+                  
                 framergb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 result = face_mesh.process(framergb)
                 face_landmarks = result.multi_face_landmarks
-                
-                if not calibrated:
-                    initial_eye_position[0] = face_landmarks[0].x
-                    initial_eye_position[1] = face_landmarks[1].y
-                    calibrated = True
             
                 if face_landmarks:
                     for faceLMs in face_landmarks:
@@ -362,6 +346,13 @@ try:
                 elif x < mid_x:
                     send_command_to_arduino("R")
                     print("R")
+                    
+                if y > mid_y:
+                    send_command_to_arduino("D")
+                    print("D")
+                elif y < mid_y:
+                    send_command_to_arduino("U")
+                    print("U")
                     
                 if ratioMapped < blinkMap and not blinking:
                     blinking = True
@@ -400,8 +391,8 @@ try:
 
             if cv2.waitKey(5) & 0xFF == ord("q"):
                 break
-except:
-    print("Encerrando...")
+except Exception as e:
+    print(f"Encerrando...{e}")
     
 arduino_queue.put(None)
 arduino_thread.join()
