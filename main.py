@@ -430,9 +430,8 @@ try:
 except Exception as e:
     print(f"Encerrando...{e}")
     
-# arduino_queue.put(None)
-# arduino_thread.join()
-# arduino.close()
-
+arduino_queue.put(None)
+arduino_thread.join()
+arduino.close()
 
 cap.release()
