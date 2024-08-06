@@ -1,24 +1,38 @@
 #include <Servo.h>
 
-Servo servoH; // Servo Horizontal
+Servo servoH, servoV; // Servo Horizontal e vertical
 
-int ledPin = 13;           // Pino do LED
-int buzzerPin = 9;         // Pino do Buzzer
-int servoHPin = 10;        // Pino do Servo Horizontal
-int servoHAngle = 90;      // Ângulo que o servo horizontal vai girar
-int rotationItensity = 5; // Intensidade da rotação
+int ledPin = 13;
 
-int leftLed = 11;
-int rightLed = 12;
+int servoHPin = 10;   // Pino do Servo Horizontal
+int servoHAngle = 90; // Ângulo que o servo horizontal vai girar
+
+int servoVPin = 9;
+int servoVAngle = 90;
+
+int buzzerPin = 8;
+
+int rotationItensity = 10; // Intensidade da rotação
+
+void blinkLed(int ledPin)
+{
+  digitalWrite(ledPin, HIGH);
+  delay(300); // ms
+  digitalWrite(ledPin, LOW);
+}
 
 void setup()
 {
-  pinMode(ledPin, OUTPUT);    // Configura o pino do LED como saída
-  pinMode(leftLed, OUTPUT);
-  pinMode(rightLed, OUTPUT);
-  pinMode(buzzerPin, OUTPUT); // Configura o pino do Buzzer como saída
-  servoH.attach(servoHPin);   // Configura a conexão do Servo Horizontal com o pino;
-  Serial.begin(9600);         // Inicializa a comunicação serial
+  pinMode(ledPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+
+  servoH.attach(servoHPin); // Configura a conexão do Servo Horizontal com o pino;
+  servoH.write(servoHAngle);
+
+  servoV.attach(servoVPin);
+  servoV.write(servoVAngle);
+
+  Serial.begin(9600); // Inicializa a comunicação serial
 }
 
 void loop()
@@ -26,25 +40,32 @@ void loop()
   if (Serial.available() > 0)
   {
     char command = Serial.read(); // Lê o comando enviado pelo Python
+
+    if (command == 'L')
+    {
+      servoHAngle = servoHAngle <= rotationItensity + 5 ? servoHAngle : servoHAngle - rotationItensity; // Configurando rotação para esquerda
+    }
+    else if (command == 'R')
+    {
+      servoHAngle = servoHAngle >= 180 - rotationItensity - 5 ? servoHAngle : servoHAngle + rotationItensity; // Configurando rotação para direita
+    }
+
+    if (command == 'D')
+    {
+      servoVAngle = servoVAngle <= rotationItensity + 5 ? servoVAngle : servoVAngle - rotationItensity;
+    }
+    else if (command == 'U')
+    {
+      servoVAngle = servoVAngle >= 180 - rotationItensity ? servoVAngle : servoVAngle + rotationItensity;
+    }
+
     if (command == '1')
     {
-      digitalWrite(buzzerPin, HIGH);
-    } if (command == '0') {
-      digitalWrite(buzzerPin, LOW);
-    } if (command == 'L')
-    {
-      // servoHAngle -= rotationItensity;
-      digitalWrite(leftLed, HIGH);
-      digitalWrite(rightLed, LOW);
+      blinkLed(ledPin);
+      blinkLed(buzzerPin);
     }
-    if (command == 'R')
-    {
-      // servoHAngle += rotationItensity;
-      digitalWrite(rightLed, HIGH);
-      digitalWrite(leftLed, LOW);
-    }
-    command = '0'; // clears the variable
   }
 
-servoH.write(servoHAngle);
+  servoH.write(servoHAngle);
+  servoV.write(servoVAngle);
 }

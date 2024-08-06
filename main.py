@@ -8,7 +8,7 @@ import winsound
 import threading
 import queue
 
-COM = "COM9"
+COM = "COM3"
 arduino_lock = threading.Lock()
 serial_command = ""
 arduino_queue = queue.Queue()
@@ -33,9 +33,9 @@ closedEyes = 0
 blinkMap = 0
 calibrating = True
 
-eye_closed_duration = 0.3
+eye_closed_duration = 0.1
 
-font = cv2.FONT_HERSHEY_DUPLEX
+font = cv2.FONT_HERSHEY_TRIPLEX
 blinkCount = 0
 blinking = False
 closed_eye_start_time = None
@@ -140,10 +140,11 @@ def draw_face_coordinates(image, face_landmarks, width):
     font = cv2.FONT_HERSHEY_SIMPLEX
     x_coord = int(face_landmarks[0].x * width)
     y_coord = int(face_landmarks[0].y * width)
+
     cv2.putText(
         image,
         f"X: {x_coord}, Y: {y_coord}",
-        (50, 100),
+        (360, 450),
         font,
         1,
         (255, 255, 255),
@@ -253,6 +254,10 @@ try:
             draw_eye_lines(image, face_landmarks, width, height)
             draw_face_coordinates(image, face_landmarks, width)
 
+            framergb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            result = face_mesh.process(framergb)
+            face_landmarks = result.multi_face_landmarks
+
             if calibrating:
                 if ratioMapped < openedEyes and not blinking:
                     blinkCount += 1
@@ -269,62 +274,22 @@ try:
                     blinkMap = closedEyes + (openedEyes - closedEyes) / 2
                     calibrating = False
                     blinkCount = 0
-
-                cv2.putText(
-                    image,
-                    "Pisque para calibrar o dispositivo",
-                    (50, 50),
-                    font,
-                    1,
-                    (0, 0, 0),
-                    2,
-                    cv2.LINE_AA,
-                )
                 
-                cv2.putText(
-                    image,
-                    f"{blinkCount}",
-                    (50, 150),
-                    font,
-                    1,
-                    (255, 150, 30),
-                    2,
-                    cv2.LINE_AA
-                )
-            else:              
-                eye_status = ""
-                if ratioMapped < blinkMap:
-                    eye_status = "Olhos fechados"
-                elif ratioMapped >= blinkMap + 1:
-                    eye_status = "Olhos abertos"
-                else:
-                    eye_status = "Piscando..."
-                    
-                cv2.putText(
-                    image,
-                    eye_status,
-                    (50, 200),
-                    font,
-                    1,
-                    (0, 145, 180),
-                    2,
-                    cv2.LINE_AA,
-                )
-
-
-                  
-                framergb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                result = face_mesh.process(framergb)
-                face_landmarks = result.multi_face_landmarks
-            
                 if face_landmarks:
                     for faceLMs in face_landmarks:
                         x_max = 0
                         y_max = 0
                         x_min = w
                         y_min = h
+
                         for lm in faceLMs.landmark:
+                            # ret, frame = cap.read()
+                            ih, iw, _ = image.shape
                             x, y = int(lm.x * w), int(lm.y * h)
+
+                            if x < 0 or y < 0 or x > iw or y > ih:
+                                # winsound.Beep(1000, 500)
+                                send_command_to_arduino('1')
 
                             if x > x_max:
                                 x_max = x
@@ -340,19 +305,90 @@ try:
                                     image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
                             )
 
-                if x > mid_x:
-                    send_command_to_arduino("L")
-                    print("L")
-                elif x < mid_x:
-                    send_command_to_arduino("R")
-                    print("R")
+                cv2.putText(
+                    image,
+                    "Pisque para calibrar o dispositivo",
+                    (50, 250),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 45, 255),
+                    2,
+                    cv2.LINE_AA,
+                )
+                
+                cv2.putText(
+                    image,
+                    f"{blinkCount}",
+                    (300, 285),
+                    font,
+                    1,
+                    (255, 255, 225),
+                    2,
+                    cv2.LINE_AA
+                )
+            else:              
+                eye_status = ""
+                if ratioMapped < blinkMap:
+                    eye_status = "Olhos fechados"
+                elif ratioMapped >= blinkMap + 1:
+                    eye_status = "Olhos abertos"
+                else:
+                    eye_status = "Piscando..."
+                
+                if face_landmarks:
+                    for faceLMs in face_landmarks:
+                        x_max = 0
+                        y_max = 0
+                        x_min = w
+                        y_min = h
+                        for lm in faceLMs.landmark:
+                            # ret, frame = cap.read()
+                            ih, iw, _ = image.shape
+                            x, y = int(lm.x * w), int(lm.y * h)
+
+                            if x < 0 or y < 0 or x > iw or y > ih:
+                                # winsound.Beep(1000, 500)
+                                send_command_to_arduino('1')
+
+
+                            if x > x_max:
+                                x_max = x
+                            if x < x_min:
+                                x_min = x
+
+                            if y > y_max:
+                                y_max = y
+                            if y < y_min:
+                                y_min = y
+
+                            cv2.rectangle(
+                                    image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
+                            )
                     
-                if y > mid_y:
-                    send_command_to_arduino("D")
-                    print("D")
-                elif y < mid_y:
-                    send_command_to_arduino("U")
-                    print("U")
+                cv2.putText(
+                    image,
+                    eye_status,
+                    (30, 450),
+                    font,
+                    1,
+                    (0, 145, 180),
+                    2,
+                    cv2.LINE_AA,
+                )
+
+                # if x > mid_x:
+                #     send_command_to_arduino("L")
+                #     print("L")
+                # elif x < mid_x:
+                #     send_command_to_arduino("R")
+                #     print("R")
+                    
+                # if y > mid_y:
+                #     send_command_to_arduino("D")
+                #     print("D")
+                # elif y < mid_y:
+                #     send_command_to_arduino("U")
+                #     print("U")
                     
                 if ratioMapped < blinkMap and not blinking:
                     blinking = True
@@ -373,8 +409,8 @@ try:
                     winsound.Beep(1000, 500)
                     send_command_to_arduino("1")
                     print("1")
-                else:
-                    send_command_to_arduino("0")
+                # else:
+                    # send_command_to_arduino("0")
                     
                 cv2.putText(
                     image,
@@ -394,9 +430,9 @@ try:
 except Exception as e:
     print(f"Encerrando...{e}")
     
-arduino_queue.put(None)
-arduino_thread.join()
-arduino.close()
+# arduino_queue.put(None)
+# arduino_thread.join()
+# arduino.close()
 
 
 cap.release()
