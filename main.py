@@ -33,7 +33,7 @@ closedEyes = 0
 blinkMap = 0
 calibrating = True
 
-eye_closed_duration = 0.1
+eye_closed_duration = 0.3
 
 font = cv2.FONT_HERSHEY_TRIPLEX
 blinkCount = 0
@@ -182,9 +182,9 @@ def turn_servo_horizontal(arduino_servo):
                     if y < y_min:
                         y_min = y
 
-                    cv2.rectangle(
-                            image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
-                    )
+        cv2.rectangle(
+                image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
+        )
 
         with arduino_lock:
             if x > mid_x:
@@ -233,9 +233,9 @@ def send_command_to_arduino(command):
     """
     arduino_queue.put(command)
 
-arduino = Serial(COM, 9600)
-arduino_thread = threading.Thread(target=arduino_communication_thread, args=(arduino,))
-arduino_thread.start()
+# arduino = Serial(COM, 9600)
+# arduino_thread = threading.Thread(target=arduino_communication_thread, args=(arduino,))
+# arduino_thread.start()
 
 try:
     while True:
@@ -301,9 +301,9 @@ try:
                             if y < y_min:
                                 y_min = y
 
-                            cv2.rectangle(
-                                    image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
-                            )
+                cv2.rectangle(
+                        image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
+                )
 
                 cv2.putText(
                     image,
@@ -361,9 +361,9 @@ try:
                             if y < y_min:
                                 y_min = y
 
-                            cv2.rectangle(
-                                    image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
-                            )
+                    cv2.rectangle(
+                            image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
+                    )
                     
                 cv2.putText(
                     image,
@@ -430,8 +430,8 @@ try:
 except Exception as e:
     print(f"Encerrando...{e}")
     
-arduino_queue.put(None)
-arduino_thread.join()
-arduino.close()
+# arduino_queue.put(None)
+# arduino_thread.join()
+# arduino.close()
 
 cap.release()
